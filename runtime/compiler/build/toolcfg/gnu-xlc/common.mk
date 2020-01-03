@@ -72,8 +72,22 @@ CX_FLAGS+=\
     -qxflag=selinux \
     -qalias=noansi \
     -qfuncsect \
-    -qxflag=LTOL:LTOL0 \
-    -qarch=$(CX_ARCH)
+    -qxflag=LTOL:LTOL0
+
+XLC_VERSION := $(shell xlc -qversion | tail -n1 | awk '{print $$2}')
+
+ifeq (,$(findstring ppc64le,$(PLATFORM)))
+    CX_FLAGS+=-qarch=$(CX_ARCH)
+else
+    # little endian
+    ifneq (,$(findstring 16,$(XLC_VERSION)))
+        # xlc 16
+        CX_FLAGS+=-qxlcompatmacros -qarch=pwr8
+    else
+        # xlc 13 - shouldn't be -qarch=pwr7?
+        CX_FLAGS+=-qarch=$(CX_ARCH)
+    endif
+endif
 
 CXX_FLAGS+=\
     -qlanglvl=extended0x \
@@ -173,8 +187,20 @@ SPP_FLAGS+=\
     -qxflag=selinux \
     -qalias=noansi \
     -qfuncsect \
-    -qxflag=LTOL:LTOL0 \
-    -qarch=$(CX_ARCH)
+    -qxflag=LTOL:LTOL0
+
+ifeq (,$(findstring ppc64le,$(PLATFORM)))
+    SPP_FLAGS+=-qarch=$(CX_ARCH)
+else
+    # little endian
+    ifneq (,$(findstring 16,$(XLC_VERSION)))
+        # xlc 16
+        SPP_FLAGS+=-qxlcompatmacros -qarch=pwr8
+    else
+        # xlc 13 - shouldn't be -qarch=pwr7?
+        SPP_FLAGS+=-qarch=$(CX_ARCH)
+    endif
+endif
 
 SPP_DEFINES_DEBUG+=DEBUG
 SPP_FLAGS_DEBUG+=-g -qfullpath
@@ -217,6 +243,7 @@ SPP_FLAGS+=$(SPP_FLAGS_EXTRA)
 SOLINK_CMD?=$(CC)
 
 SOLINK_FLAGS+=-qmkshrobj -qxflag=selinux
+
 SOLINK_LIBPATH+=$(PRODUCT_LIBPATH)
 SOLINK_SLINK+=\
     $(PRODUCT_SLINK) \
@@ -242,7 +269,16 @@ ifeq ($(HOST_BITS),32)
     S_FLAGS+=-a32 -mppc
 endif
 
-SOLINK_EXTRA_ARGS+=-Wl,-static -libmc++ -Wl,-call_shared -lstdc++
+SOLINK_EXTRA_ARGS+=-Wl,-static -libmc++
+
+ifneq (,$(findstring ppc64le,$(PLATFORM)))
+    ifneq (,$(findstring 16,$(XLC_VERSION)))
+        # little endian xlc 16
+        SOLINK_EXTRA_ARGS+=-Wl,-static -lstdc++
+    endif
+endif
+
+SOLINK_EXTRA_ARGS+=-Wl,-call_shared -lstdc++
 
 # Determine which export script to use depending on whether debug symbols are on
 SOLINK_VERSION_SCRIPT=$(JIT_SCRIPT_DIR)/j9jit.linux.exp

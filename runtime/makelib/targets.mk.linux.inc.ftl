@@ -179,6 +179,14 @@ ifeq (,$(findstring $(GCC_MAJOR_VERSION),1 2 3 4))
 endif
 </#if>
 
+<#if uma.spec.flags.env_littleEndian.enabled && !uma.spec.flags.env_gcc.enabled>
+  XLC_VERSION := $(shell xlc -qversion | head -n1 | cut -dV -f2 | awk '{print $$1}')
+  ifneq (,$(findstring 16,$(XLC_VERSION)))
+     CFLAGS += -qxlcompatmacros
+     CXXFLAGS += -qxlcompatmacros
+  endif
+</#if>
+
 <#if !uma.spec.processor.ppc>
   CXXFLAGS += -fno-exceptions -fno-rtti -fno-threadsafe-statics
 <#else>
@@ -212,7 +220,11 @@ ASFLAGS += -noexecstack
     ifdef j9vm_env_data64
       ASFLAGS += -q64
       <#if uma.spec.flags.env_littleEndian.enabled>
-      ASFLAGS += -qarch=pwr7
+        ifeq (,$(findstring 16,$(XLC_VERSION)))
+          ASFLAGS += -qarch=pwr7
+        else
+          ASFLAGS += -qarch=pwr8
+        endif
       <#else>
       ASFLAGS += -qarch=ppc64
       </#if>
@@ -329,8 +341,13 @@ endif
     CXXFLAGS += -qalias=noansi -qxflag=LTOL:LTOL0 -qxflag=selinux -qsuppress=1540-1087:1540-1088:1540-1090
     ifdef j9vm_env_data64
     <#if uma.spec.flags.env_littleEndian.enabled>
-      CFLAGS += -qarch=pwr7
-      CXXFLAGS += -qarch=pwr7
+      ifeq (,$(findstring 16,$(XLC_VERSION)))
+        CFLAGS += -qarch=pwr7
+        CXXFLAGS += -qarch=pwr7
+      else
+        CFLAGS += -qarch=pwr8
+        CXXFLAGS += -qarch=pwr8
+      endif
     <#else>
       CFLAGS += -qarch=ppc64
       CXXFLAGS += -qarch=ppc64
