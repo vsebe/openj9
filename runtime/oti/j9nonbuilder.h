@@ -1472,7 +1472,13 @@ typedef struct J9ExceptionHandler {
 	U_32 exceptionClassIndex;
 } J9ExceptionHandler;
 
-#if defined(__xlC__) || defined(J9ZOS390)  /* Covers: Z/OS, AIX, Linux PPC*/
+/*
+ * For Linux PPC LE:
+ * __ibmxlc__ macro is defined for xlc 13.1.1 and xlc 16.1.1
+ * __xlC__ macro is defined in xlc 16.1.1 only when -qxlcompatmacros compiler option is enabled
+ * (-qxlcompatmacro is enabled when compiling the VM with xlc 16.1.1)
+ */
+#if (defined(__xlC__) && (defined(AIXPPC) || !defined(__LITTLE_ENDIAN__))) || defined(J9ZOS390) /* Covers: Z/OS, AIX, Linux PPC BE */
 #pragma pack(1)
 #elif defined(__ibmxl__) || defined(__GNUC__) || defined(_MSC_VER) /* Covers: Linux PPC LE, Windows, Linux x86 */
 #pragma pack(push, 1)
