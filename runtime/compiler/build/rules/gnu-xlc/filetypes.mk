@@ -111,7 +111,8 @@ ifeq ($(C_COMPILER),xlc)
 #
 define DEF_RULE.spp
 $(1).ipp: $(2) | jit_createdirs
-	$$(SPP_CMD) $$(SPP_FLAGS) $$(patsubst %,-D%,$$(SPP_DEFINES)) $$(patsubst %,-I'%',$$(SPP_INCLUDES)) -qmakedep -MF $$@$$(DEPSUFF) -E $$< > $$@
+	cp $(2) $$(patsubst %.spp,%.c,$(2))
+	$$(SPP_CMD) $$(SPP_FLAGS) $$(patsubst %,-D%,$$(SPP_DEFINES)) $$(patsubst %,-I'%',$$(SPP_INCLUDES)) -qmakedep -MF $$@$$(DEPSUFF) -E $$(patsubst %.spp,%.c,$(2)) > $$@
 
 JIT_DIR_LIST+=$(dir $(1))
 
